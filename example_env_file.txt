@@ -1,0 +1,7 @@
+Create a new '.env' file with the following data:
+
+DATABASE_USER=postgres
+DATABASE_PASSWORD=abc10def
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=fastapi
