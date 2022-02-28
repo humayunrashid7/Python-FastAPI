@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.app_v1.routers import posts
 
 # Declare App
-app = FastAPI()
+app = FastAPI(title="FastAPI CRUD", version="1.0.0")
 
 # Config CORS
 app.add_middleware(
