@@ -15,7 +15,7 @@ async def get_all_posts(db: Session = Depends(get_db)):
     all_posts = db.query(models.Post).all()
     return all_posts
 
-# GET: /api/posts
+# GET: /api/posts/5
 @router.get('/posts/{id}', response_model=PostResponse)
 async def get_post_by_id(id: int, db: Session = Depends(get_db)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
