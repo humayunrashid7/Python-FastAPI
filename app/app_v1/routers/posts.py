@@ -4,6 +4,7 @@ from app.db import models
 from app.db.database import get_db
 from sqlalchemy.orm import Session
 from typing import List
+from app.auth import oauth2
 
 router = APIRouter(
     prefix='/api'
@@ -27,7 +28,8 @@ async def get_post_by_id(id: int, db: Session = Depends(get_db)):
 
 # POST: /api/posts
 @router.post('/posts', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
-async def create_post(post: CreatePostRequest, db: Session = Depends(get_db)):
+async def create_post(post: CreatePostRequest, db: Session = Depends(get_db), 
+    current_user: models.User = Depends(oauth2.get_current_user)):
      # new_post = models.Post(title=post.title, content=post.content, 
     #     published=post.published)
     new_post = models.Post(**post.dict())
