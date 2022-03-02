@@ -1,8 +1,9 @@
 from fastapi import Response, status, HTTPException, APIRouter, Depends
-from app.db.schemas import PostResponse, CreatePostRequest, UpdatePostRequest
+from app.db.schemas import PostResponse, CreatePostRequest, UpdatePostRequest, Post
 from app.db import models
 from app.db.database import get_db
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from app.auth import oauth2
 
@@ -14,7 +15,10 @@ router = APIRouter(
 @router.get('/posts', response_model=List[PostResponse])
 async def get_all_posts(db: Session = Depends(get_db), limit: int=10, search: Optional[str]=''):
     # Returns all posts regardless of user logged in
-    all_posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).all()
+    all_posts = db.query(models.Post, func.count(models.Vote.post_id).label('votes')).join(
+            models.Vote, models.Vote.post_id == models.Post.id, isouter=True
+        ).group_by(models.Post.id).filter(
+        models.Post.title.contains(search)).limit(limit).all()
 
     # Return all posts for a specific user
     # all_posts = db.query(models.Post).filter(models.Post.user_id == current_user.id).all()
@@ -23,7 +27,10 @@ async def get_all_posts(db: Session = Depends(get_db), limit: int=10, search: Op
 # GET: /api/posts/5
 @router.get('/posts/{id}', response_model=PostResponse)
 async def get_post_by_id(id: int, db: Session = Depends(get_db)):
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    post = db.query(models.Post, func.count(models.Vote.post_id).label('votes')).filter(
+        models.Post.id == id).join(
+            models.Vote, models.Vote.post_id == models.Post.id, isouter=True
+        ).group_by(models.Post.id).first()
     # check if post is null
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
@@ -31,7 +38,7 @@ async def get_post_by_id(id: int, db: Session = Depends(get_db)):
     return post
 
 # POST: /api/posts
-@router.post('/posts', status_code=status.HTTP_201_CREATED, response_model=PostResponse)
+@router.post('/posts', status_code=status.HTTP_201_CREATED, response_model=Post)
 async def create_post(post: CreatePostRequest, db: Session = Depends(get_db), 
     current_user: models.User = Depends(oauth2.get_current_user)):
      # new_post = models.Post(title=post.title, content=post.content, 

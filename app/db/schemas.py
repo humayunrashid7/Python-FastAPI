@@ -20,7 +20,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     class Config:
         orm_mode = True
-class PostResponse(BaseModel):
+class Post(BaseModel):
     id: int
     title: str
     content: str
@@ -31,6 +31,9 @@ class PostResponse(BaseModel):
     class Config:
         orm_mode = True
 
+class PostResponse(BaseModel):
+    Post: Post
+    votes: int
 class CreateUserRequest(BaseModel):
     email: EmailStr
     password: str
