@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.app_v1.routers import posts
 from app.app_v1.routers import users
 from app.app_v1.routers import auth
+from app.app_v1.routers import votes
 
 # Declare App
 app = FastAPI(title="FastAPI CRUD", version="1.0.0")
@@ -20,6 +21,7 @@ app.add_middleware(
 app.include_router(posts.router)
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(votes.router)
 
 # API Root Method
 @app.get('/')

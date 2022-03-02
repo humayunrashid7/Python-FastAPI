@@ -36,9 +36,9 @@ async def create_post(post: CreatePostRequest, db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)):
      # new_post = models.Post(title=post.title, content=post.content, 
     #     published=post.published)
-    new_post = models.Post(**post.dict(), user_id=current_user.id)
-    db.add(new_post)
-    db.commit()
+    new_post = models.Post(**post.dict(), user_id=current_user.id) # create the Post model
+    db.add(new_post) # add Post model to database
+    db.commit() # save changes
     db.refresh(new_post) #returns the created obj with id field
     return new_post
 

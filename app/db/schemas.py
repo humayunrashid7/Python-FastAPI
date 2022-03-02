@@ -50,3 +50,7 @@ class TokenResponse(BaseModel):
 
 class TokenData(BaseModel):
     id: Optional[str] = None
+
+class CreateVoteRequest(BaseModel):
+    post_id: int
+    dir: int # 0: remove vote/like, 1: add vote/like
