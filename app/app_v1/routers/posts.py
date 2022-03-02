@@ -3,17 +3,21 @@ from app.db.schemas import PostResponse, CreatePostRequest, UpdatePostRequest
 from app.db import models
 from app.db.database import get_db
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.auth import oauth2
 
 router = APIRouter(
     prefix='/api'
 )
 
-# GET: /api/posts
+# GET: /api/posts?limit=5
 @router.get('/posts', response_model=List[PostResponse])
-async def get_all_posts(db: Session = Depends(get_db)):
-    all_posts = db.query(models.Post).all()
+async def get_all_posts(db: Session = Depends(get_db), limit: int=10, search: Optional[str]=''):
+    # Returns all posts regardless of user logged in
+    all_posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).all()
+
+    # Return all posts for a specific user
+    # all_posts = db.query(models.Post).filter(models.Post.user_id == current_user.id).all()
     return all_posts
 
 # GET: /api/posts/5
@@ -32,7 +36,7 @@ async def create_post(post: CreatePostRequest, db: Session = Depends(get_db),
     current_user: models.User = Depends(oauth2.get_current_user)):
      # new_post = models.Post(title=post.title, content=post.content, 
     #     published=post.published)
-    new_post = models.Post(**post.dict())
+    new_post = models.Post(**post.dict(), user_id=current_user.id)
     db.add(new_post)
     db.commit()
     db.refresh(new_post) #returns the created obj with id field
@@ -40,14 +44,20 @@ async def create_post(post: CreatePostRequest, db: Session = Depends(get_db),
 
 # DELETE: /api/posts/5
 @router.delete('/posts/{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id: int, db: Session = Depends(get_db)):
+async def delete_post(id: int, db: Session = Depends(get_db), 
+                    current_user: models.User = Depends(oauth2.get_current_user)):
     # Create the query
-    post_query = db.query(models.Post).filter(models.Post.id == id)
-
+    post_query: models.Post = db.query(models.Post).filter(models.Post.id == id)
     # Run the query by calling .first()
-    if post_query.first() == None:
+    post = post_query.first()
+
+    if post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f'post with id: {id} does not exist')
+    
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Not authorized to perform requested action')
 
     # Delete the item
     post_query.delete()
@@ -57,15 +67,21 @@ async def delete_post(id: int, db: Session = Depends(get_db)):
 
 # PUT: /api/posts/5
 @router.put('/posts/{id}', response_model=PostResponse)
-async def update_post(id: int, post: UpdatePostRequest, db: Session = Depends(get_db)):
+async def update_post(id: int, post_req: UpdatePostRequest, db: Session = Depends(get_db), 
+                    current_user: models.User = Depends(oauth2.get_current_user)):
     # Create the query
     post_query = db.query(models.Post).filter(models.Post.id == id)
-
     # Run the query by calling .first()
-    if post_query.first() == None:
+    post = post_query.first()
+    
+    if post == None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail=f'post with id: {id} does not exist')
 
-    post_query.update(post.dict())
+    if post.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail='Not authorized to perform requested action')
+
+    post_query.update(post_req.dict())
     db.commit()
     return post_query.first()
